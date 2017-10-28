@@ -37,19 +37,26 @@ namespace Minimization
             return state ? char.ToUpper(variable) : char.ToLower(variable);
         }
 
-        private static void PrintTable(int n, IReadOnlyList<int> values)
+        private static IEnumerable<string> PrintInitialTable(int n, IReadOnlyList<int> values)
         {
             Console.Write("".PadRight(n + 1, ' '));
-            var primitives = GenerateTitles(n);
+            var primitives = GenerateTitles(n).ToArray();
             Console.Write(string.Join(" ", primitives.Select(PrimitiveToString).ToList()));
             Console.WriteLine(" F");
+            var deletedPrimitives = new List<string>();
 
             for (var i = 0; i < Math.Pow(2, n); ++i)
             {
                 Console.Write(Convert.ToString(i, 2).PadLeft(n, '0')+" ");
-                Console.Write(string.Join(" ", primitives.Select(p => CheckPrimitive(i, p, n))));
+                var stringPrimitives = primitives.Select(p => CheckPrimitive(i, p, n)).ToArray();
+                Console.Write(string.Join(" ", stringPrimitives));
+                if (values[i] == 0)
+                {
+                    deletedPrimitives.AddRange(stringPrimitives);
+                }
                 Console.WriteLine(" "+values[i]);
             }
+            return deletedPrimitives.Distinct();
         }
 
         private static string CheckPrimitive(int i, IEnumerable<int> primitive, int n)
@@ -69,7 +76,29 @@ namespace Minimization
             var values = Console.ReadLine().Select(x => int.Parse(x.ToString())).ToArray();
             _variableNames = _variableNames.Take(n).ToArray();
             Console.WriteLine("Initial state:");
-            PrintTable(n, values);
+            var deletedPrimitivies = PrintInitialTable(n, values).ToArray();
+            Console.WriteLine("Deleted primitivies: ");
+            Console.WriteLine(string.Join(", ", deletedPrimitivies));
+            PrintTableWithDeletions(n, values, deletedPrimitivies);
+        }
+
+        private static IEnumerable<string[]> PrintTableWithDeletions(int n, IReadOnlyList<int> values, IEnumerable<string> deletedPrimitivies)
+        {
+            var deletedSet = new HashSet<string>(deletedPrimitivies);
+            Console.Write("".PadRight(n + 1, ' '));
+            var primitives = GenerateTitles(n).ToArray();
+            Console.Write(string.Join(" ", primitives.Select(PrimitiveToString).ToList()));
+            Console.WriteLine(" F");
+
+            for (var i = 0; i < Math.Pow(2, n); ++i)
+            {
+                Console.Write(Convert.ToString(i, 2).PadLeft(n, '0')+" ");
+                var stringPrimitives = primitives
+                    .Select(p => CheckPrimitive(i, p, n))
+                    .Select(x =>deletedSet.Contains(x) ? "".PadLeft(x.Length, ' ') : x);
+                Console.Write(string.Join(" ", stringPrimitives));
+                Console.WriteLine(" "+values[i]);
+            }
         }
     }
 }
